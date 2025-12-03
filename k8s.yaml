@@ -60,10 +60,6 @@ spec:
                 name: cu-ms-payments
             - secretRef:
                 name: cu-ms-payments
-            - configMapRef:
-                name: superconfigmap
-            - secretRef:
-                name: supersecreto
 ---
 apiVersion: v1
 kind: Service
