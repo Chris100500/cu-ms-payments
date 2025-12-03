@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: hola-mundo
-          image: chris100500/cu-ms-payments:2
+          image: chris100500/cu-ms-payments:{{ imageTag }}
           ports:
             - containerPort: 3000
           resources:
