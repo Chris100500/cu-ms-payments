@@ -60,6 +60,7 @@ spec:
                 name: cu-ms-payments
             - secretRef:
                 name: cu-ms-payments
+
 ---
 apiVersion: v1
 kind: Service
@@ -80,7 +81,11 @@ metadata:
   name: cu-ms-payments
   namespace: chris100500-dev
 data:
-  LOG_LEVEL: debug
+  LOG_LEVEL: "debug"
+  DATABASE_HOST: "mi-postgres-postgresql.chris100500-dev.svc.cluster.local"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "postgres"
+  DATABASE_USER: "postgres"
 ---
 apiVersion: v1
 kind: Secret
@@ -88,7 +93,7 @@ metadata:
   name: cu-ms-payments
   namespace: chris100500-dev
 data:
-  DATABASE_PASSWORD: U3VwZXJTZWd1cm8yMDI1
+  DATABASE_PASSWORD: TWlQYXNzd29yZFNlZ3VybzEyMw==
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -115,3 +120,4 @@ spec:
         target:
           type: Utilization ## EN BASE AL REQUEST
           averageUtilization: 90
+---
