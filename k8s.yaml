@@ -82,7 +82,7 @@ metadata:
   namespace: chris100500-dev
 data:
   LOG_LEVEL: "debug"
-  DATABASE_HOST: "mi-postgres-postgresql.chris100500-dev.svc.cluster.local"
+  DATABASE_HOST: "mi-postgres-postgresql-primary.chris100500-dev.svc.cluster.local"
   DATABASE_PORT: "5432"
   DATABASE_NAME: "postgres"
   DATABASE_USER: "postgres"
