@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -74,6 +75,7 @@ spec:
     - protocol: TCP
       port: 3000
       targetPort: 3000
+  type: ClusterIP
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -92,8 +94,9 @@ kind: Secret
 metadata:
   name: cu-ms-payments
   namespace: chris100500-dev
+type: Opaque
 data:
-  DATABASE_PASSWORD: TWlQYXNzd29yZFNlZ3VybzEyMw==
+  DATABASE_PASSWORD: TWlQYXNzd29yZFNlZ3VybzEyMw==  # Base64 de MiPasswordSeguro123
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -112,12 +115,11 @@ spec:
       resource:
         name: cpu
         target:
-          type: Utilization ## EN BASE AL REQUEST
+          type: Utilization
           averageUtilization: 90
     - type: Resource
       resource:
         name: memory
         target:
-          type: Utilization ## EN BASE AL REQUEST
+          type: Utilization
           averageUtilization: 90
----

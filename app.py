@@ -1,6 +1,7 @@
+
 #!/usr/bin/env python3
 """
-Servidor HTTP simple que responde Hola Mundo
+Servidor HTTP simple que responde Hola Mundo y permite GET y POST a la base de datos
 """
 import http.server
 import socketserver
@@ -28,7 +29,6 @@ def get_users():
     """Conecta a PostgreSQL y obtiene los usuarios"""
     if not POSTGRES_AVAILABLE:
         return {"error": "psycopg2 no está instalado"}
-    
     try:
         conn = psycopg2.connect(
             host=DB_HOST,
@@ -47,52 +47,90 @@ def get_users():
     except Exception as e:
         return {"error": str(e)}
 
+def add_user(name):
+    """Inserta un nuevo usuario en la base de datos"""
+    if not POSTGRES_AVAILABLE:
+        return {"error": "psycopg2 no está instalado"}
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO users (name) VALUES (%s) RETURNING id", (name,))
+        new_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {"message": "Usuario creado correctamente", "id": new_id, "name": name}
+    except Exception as e:
+        return {"error": str(e)}
+
 class HolaMundoHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] Solicitud GET recibida PEPITO", file=sys.stdout)
+        print(f"[{timestamp}] Solicitud GET recibida", file=sys.stdout)
         print(f"[{timestamp}] Path: {self.path}", file=sys.stdout)
-        
+
         if self.path == '/startup':
-            print(f"[{timestamp}] se llamo al endpoints /startup", file=sys.stdout)
-            sys.stdout.flush()
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(b'OK')
+            self._send_text_response('OK')
         elif self.path == '/liveness':
-            print(f"[{timestamp}] se llamo al endpoints /liveness", file=sys.stdout)
-            sys.stdout.flush()
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(b'OK')
+            self._send_text_response('OK')
         elif self.path == '/readiness':
-            print(f"[{timestamp}] se llamo al endpoints /readiness", file=sys.stdout)
-            sys.stdout.flush()
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(b'OK')
+            self._send_text_response('OK')
         elif self.path == '/users':
-            print(f"[{timestamp}] se llamo al endpoints /users", file=sys.stdout)
-            sys.stdout.flush()
             result = get_users()
             self.send_response(200)
             self.send_header('Content-type', 'application/json; charset=utf-8')
             self.end_headers()
             self.wfile.write(json.dumps(result).encode('utf-8'))
         else:
-            print(f"[{timestamp}] se llamo al endpoints raiz", file=sys.stdout)
-            sys.stdout.flush()
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self._send_text_response('<h1>Hola Mundo</h1>')
+
+    def do_POST(self):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{timestamp}] Solicitud POST recibida", file=sys.stdout)
+        print(f"[{timestamp}] Path: {self.path}", file=sys.stdout)
+
+        if self.path == '/users':
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body)
+                name = data.get('name')
+                if not name:
+                    self.send_response(400)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": "Falta el campo 'name'"}).encode('utf-8'))
+                    return
+
+                result = add_user(name)
+                self.send_response(201)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except json.JSONDecodeError:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "JSON inválido"}).encode('utf-8'))
+        else:
+            self.send_response(404)
             self.end_headers()
-            self.wfile.write(b'<h1>Hola Mundo</h1>')
-    
+
+    def _send_text_response(self, text):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(text.encode('utf-8'))
+
     def log_message(self, format, *args):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] {self.address_string()} - {format%args}", file=sys.stdout)
+        print(f"[{timestamp}] {self.address_string()} - {format % args}", file=sys.stdout)
         sys.stdout.flush()
 
 if __name__ == "__main__":
